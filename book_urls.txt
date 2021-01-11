@@ -1,0 +1,8 @@
+subject,url
+business,https://www.barnesandnoble.com/b/textbooks/business/_/N-8q9Zt82
+computers,https://www.barnesandnoble.com/b/textbooks/computers/_/N-8q9Zug4
+education,https://www.barnesandnoble.com/b/textbooks/education/_/N-8q9Zzmg
+law,https://www.barnesandnoble.com/b/textbooks/law/_/N-8q9Z1f68
+medicine,https://www.barnesandnoble.com/b/textbooks/medicine-nursing/medicine/_/N-8q9Z168q
+psychology,https://www.barnesandnoble.com/b/textbooks/psychology/_/N-8q9Z1fcc
+science-technology,https://www.barnesandnoble.com/b/textbooks/science-technology/_/N-8q9Z184l
