@@ -1,15 +1,24 @@
 import requests
-import pprint
+#import pprint
 from bs4 import BeautifulSoup
 import pandas as pd
+from time import sleep
 
-book_urls = pd.read_csv('book_urls.txt')
+book_urls = pd.read_csv('book_urls2.txt')
 
 
 def web_scrapper_book(urls, num_book_per_page=40, num_pages=5):
-    HEADERS = ({'User-Agent':
-                    'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36',
-                'Accept-Language': 'en-US, en;q=0.5'})
+    # HEADERS = ({'User-Agent':
+    #                 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36',
+    #             'Accept-Language': 'en-US, en;q=0.5'})
+
+    HEADERS = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Max-Age': '3600',
+        'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0'
+    }
 
     Book = []
     for i in range(len(urls)):
@@ -24,7 +33,11 @@ def web_scrapper_book(urls, num_book_per_page=40, num_pages=5):
 
             for book in results:
                 title = book.find('a')['title']
-                author = book.find('div', class_='product-shelf-author pt-0').find('a').text
+                author = book.find_all('div', class_='product-shelf-author pt-0')
+                if author:
+                    author = author[0].find('a').text
+                else:
+                    author = None
                 url = 'https://www.barnesandnoble.com' + book.find('a')['href']
                 cover_url = book.find('div', class_='product-shelf-image').find('img')['src']
                 Book += [[urls.iloc[i, 0], title, author, url, cover_url]]
@@ -33,9 +46,6 @@ def web_scrapper_book(urls, num_book_per_page=40, num_pages=5):
 
 
 def web_scrapper_overview(Book, from_, to_):
-    HEADERS = ({'User-Agent':
-                    'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36',
-                'Accept-Language': 'en-US, en;q=0.5'})
 
     if 'Overview' not in Book.columns:
         Book['Price'] = None
@@ -46,43 +56,56 @@ def web_scrapper_overview(Book, from_, to_):
         Book['Overview'] = None
 
     # for i in range(len(Book)):
-    for i in range(from_ - 1, to_):
+    for i in range(from_, to_):
+        sleep(1)
+        # HEADERS = ({'User-Agent':
+        #                 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36',
+        #             'Accept-Language': 'en-US, en;q=0.5'})
+        HEADERS = {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET',
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Max-Age': '3600',
+            'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0'
+        }
+
         if (i + 1) % 200 == 0:
             print('Processed ' + str(i + 1) + ' Books...')
         url = Book.Url[i]
-        # print(i, url)
+        print(i, url)
         page = requests.get(url, headers=HEADERS)
         soup = BeautifulSoup(page.text, 'html.parser')
-        # price = soup.find('span', class_ = 'price current-price ml-0')
-        # if price:
-        # price = float((price.text)[1:].replace(',', ''))
+        print('here')
+        price = soup.find_all('span', class_ = 'price current-price ml-0')
+        if price:
+            price = float((price[0].text)[1:].replace(',', ''))
 
         book_info = soup.find_all('dd', class_='mb-xxs')
         book_info = [i.text for i in book_info]
         if book_info:
-            Book['ISBN-10'][i] = book_info[0]
-            Book['ISBN-13'][i] = book_info[1]
-            Book['PubDate'][i] = book_info[2]
-            Book['Publisher'][i] = book_info[3]
+            Book.loc[i,'ISBN-10'] = book_info[0]
+            Book.loc[i,'ISBN-13'] = book_info[1]
+            Book.loc[i,'PubDate'] = book_info[2]
+            Book.loc[i,'Publisher'] = book_info[3]
         else:
             temp_info = [string for string in soup.find('table', class_='plain centered').stripped_strings]
-            Book['ISBN-13'][i] = temp_info[0]
-            Book['PubDate'][i] = temp_info[1]
-            Book['Publisher'][i] = temp_info[2]
-        # Book.Price[i] = price
+            Book.loc[i,'ISBN-13'] = temp_info[1]
+            Book.loc[i,'PubDate'] = temp_info[3]
+            Book.loc[i,'Publisher'] = temp_info[5]
+        Book.loc[i,'Price'] = price
         t = soup.find('div', {'class': 'text--medium overview-content bookseller-cont'})
         if t:
             p = t.find_all('p')
             if p:
                 p = [i.text for i in p]
                 p = ' '.join(p)
-                Book.Overview[i] = p
+                Book.loc[i,'Overview'] = p
             else:
                 component = []
                 for string in t.stripped_strings:
                     component += [(string)]
                 component = ' '.join(component)
-                Book.Overview[i] = component
+                Book.loc[i,'Overview'] = component
     return Book
 
 
@@ -95,8 +118,48 @@ def ExtractBook(book_urls, num_book_per_page = 40, num_pages = 10):
 
 
 Book_data = web_scrapper_book(book_urls, num_book_per_page = 40, num_pages = 20)
-new_Book = Book_data
-for i in range(int(len(Book_data)/400)):
-    new_Book = web_scrapper_overview(new_Book, i*400, (i+1)*400)
 
-new_Book.to_csv('Book_5600.txt', sep = ',', index = False)
+Book_data.to_csv('Book_5600_new2.txt', sep = ',', index = False)
+
+print('Done Extracting Book Info...')
+print('Starting Extracting Book Details...')
+
+# new_Book = pd.read_csv('Book_5600_new2.txt')
+# print(len(new_Book), new_Book['start_point'][0]*400)
+# print(new_Book.loc[23308,['Title']])
+# print(list(new_Book.loc[23308,['Url']]))
+
+
+num_books = 400
+if 'start_point' not in new_Book.columns:
+    new_Book['start_point'] = 0
+    print('start scraping from 0')
+else:
+    print('start scraping from ', new_Book['start_point'][0]*num_books)
+
+
+if len(new_Book) % num_books == 0:
+    end_point = int(len(new_Book) % num_books)
+else:
+    end_point = int(len(new_Book) % num_books) + 1
+
+for i in range(new_Book['start_point'][0], end_point):
+    start_index = i * num_books
+    if len(new_Book)< (i+1)*num_books:
+        end_index = len(new_Book)
+    else:
+        end_index = (i+1)*num_books
+
+    new_Book = web_scrapper_overview(new_Book, start_index, end_index)
+    new_Book['start_point'] = i+1
+    new_Book.to_csv('Book_5600_new2.txt', sep=',', index=False)
+    sleep(60)
+
+# drop count column
+new_Book = new_Book.drop(['start_point'], axis = 1)
+# drop duplicates
+data = data.drop_duplicates(subset = ['Title'])
+
+file_name = 'Book_enlarged_' + str(len(data))
+new_Book.to_csv(file_name + '.txt')
+new_Book.to_csv(file_name + '.csv')
