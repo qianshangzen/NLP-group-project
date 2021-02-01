@@ -3,11 +3,12 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 from time import sleep
+import re
 
-book_urls = pd.read_csv('book_urls2.txt')
+book_urls = pd.read_csv('../NLP-group-project/Subject_Url.csv')
+book_urls = book_urls[:40]
 
-
-def web_scrapper_book(urls, num_book_per_page=40, num_pages=5):
+def web_scrapper_book(urls, num_book_per_page=40, max_num_pages=5):
     # HEADERS = ({'User-Agent':
     #                 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36',
     #             'Accept-Language': 'en-US, en;q=0.5'})
@@ -22,8 +23,17 @@ def web_scrapper_book(urls, num_book_per_page=40, num_pages=5):
 
     Book = []
     for i in range(len(urls)):
-        print('Start extracting subject: ' + urls.iloc[i, 0])
         URL = urls.iloc[i, 1]
+        page = requests.get(URL, headers=HEADERS)
+        soup = BeautifulSoup(page.text, 'html.parser')
+        res = soup.find('ul', class_='pagination search-pagination')
+        if res:
+            pages_available = \
+            [''.join(re.findall('\d+', i.text)) for i in res.find_all('a') if bool(re.search('\d+', i.text))][-1]
+        else:
+            pages_available = 1
+        num_pages = min(int(pages_available), max_num_pages)
+        print('Start extracting ' + str(i+1) + ' subject: ' + urls.iloc[i, 0] + ' with ' + str(num_pages) + ' pages')
 
         for j in range(num_pages):
             URL_FULL = URL + '?Nrpp=' + str(num_book_per_page) + '&page=' + str(j + 1)
@@ -69,13 +79,10 @@ def web_scrapper_overview(Book, from_, to_):
             'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0'
         }
 
-        if (i + 1) % 200 == 0:
-            print('Processed ' + str(i + 1) + ' Books...')
         url = Book.Url[i]
         print(i, url)
         page = requests.get(url, headers=HEADERS)
         soup = BeautifulSoup(page.text, 'html.parser')
-        print('here')
         price = soup.find_all('span', class_ = 'price current-price ml-0')
         if price:
             price = float((price[0].text)[1:].replace(',', ''))
@@ -106,31 +113,30 @@ def web_scrapper_overview(Book, from_, to_):
                     component += [(string)]
                 component = ' '.join(component)
                 Book.loc[i,'Overview'] = component
+
     return Book
 
 
-def ExtractBook(book_urls, num_book_per_page = 40, num_pages = 10):
+def ExtractBook(book_urls, num_book_per_page = 40, max_num_pages = 10):
     print('Start Scrapping Book...')
-    books = web_scrapper_book(book_urls, num_book_per_page, num_pages)
+    books = web_scrapper_book(book_urls, num_book_per_page, max_num_pages)
     print('Start Scrapping Book Overviews...')
     final_books = web_scrapper_overview(books)
     return final_books
 
 
-Book_data = web_scrapper_book(book_urls, num_book_per_page = 40, num_pages = 20)
+# Book_data = web_scrapper_book(book_urls, num_book_per_page = 40, max_num_pages = 30)
+#
+# file_name = 'Book_1_40_subjects'
+# Book_data.to_csv(file_name + 'txt', sep = ',', index = False)
+# print('Done Extracting '+ str(len(Book_data)) + ' Book Info...')
 
-Book_data.to_csv('Book_5600_new2.txt', sep = ',', index = False)
+file_name = 'Book_1_40_subjects'
+new_Book = pd.read_csv(file_name + '.txt')
 
-print('Done Extracting Book Info...')
-print('Starting Extracting Book Details...')
+print('Starting Extracting '+ str(len(new_Book)) + ' Book Details...')
 
-# new_Book = pd.read_csv('Book_5600_new2.txt')
-# print(len(new_Book), new_Book['start_point'][0]*400)
-# print(new_Book.loc[23308,['Title']])
-# print(list(new_Book.loc[23308,['Url']]))
-
-
-num_books = 400
+num_books = 200
 if 'start_point' not in new_Book.columns:
     new_Book['start_point'] = 0
     print('start scraping from 0')
@@ -149,17 +155,16 @@ for i in range(new_Book['start_point'][0], end_point):
         end_index = len(new_Book)
     else:
         end_index = (i+1)*num_books
-
+    print('Processed ' + str(start_index) + ' Books...')
     new_Book = web_scrapper_overview(new_Book, start_index, end_index)
     new_Book['start_point'] = i+1
-    new_Book.to_csv('Book_5600_new2.txt', sep=',', index=False)
+    new_Book.to_csv(file_name+'.txt', sep=',', index=False)
     sleep(60)
 
 # drop count column
 new_Book = new_Book.drop(['start_point'], axis = 1)
 # drop duplicates
-data = data.drop_duplicates(subset = ['Title'])
+new_Book = new_Book.drop_duplicates(subset = ['Title'])
 
-file_name = 'Book_enlarged_' + str(len(data))
 new_Book.to_csv(file_name + '.txt')
 new_Book.to_csv(file_name + '.csv')
