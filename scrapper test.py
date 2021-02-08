@@ -6,7 +6,7 @@ from time import sleep
 import re
 
 book_urls = pd.read_csv('../NLP-group-project/Subject_Url.csv')
-book_urls = book_urls[:40]
+book_urls = book_urls[40:80]
 
 def web_scrapper_book(urls, num_book_per_page=40, max_num_pages=5):
     # HEADERS = ({'User-Agent':
@@ -94,6 +94,8 @@ def web_scrapper_overview(Book, from_, to_):
             Book.loc[i,'ISBN-13'] = book_info[1]
             Book.loc[i,'PubDate'] = book_info[2]
             Book.loc[i,'Publisher'] = book_info[3]
+        elif not soup.find('table', class_='plain centered'):
+            continue
         else:
             temp_info = [string for string in soup.find('table', class_='plain centered').stripped_strings]
             Book.loc[i,'ISBN-13'] = temp_info[1]
@@ -124,15 +126,20 @@ def ExtractBook(book_urls, num_book_per_page = 40, max_num_pages = 10):
     final_books = web_scrapper_overview(books)
     return final_books
 
+file_name = 'Book_41_80_subjects'
 
 # Book_data = web_scrapper_book(book_urls, num_book_per_page = 40, max_num_pages = 30)
 #
-# file_name = 'Book_1_40_subjects'
-# Book_data.to_csv(file_name + 'txt', sep = ',', index = False)
-# print('Done Extracting '+ str(len(Book_data)) + ' Book Info...')
 
-file_name = 'Book_1_40_subjects'
+# Book_data.to_csv(file_name + '.txt', sep = ',', index = False)
+# print('Done Extracting '+ str(len(Book_data)) + ' Book Info...')
+#
+# #15924
+# file_name = 'Book_1_40_subjects2'
 new_Book = pd.read_csv(file_name + '.txt')
+
+# drop duplicates
+new_Book = new_Book.drop_duplicates(subset = ['Title'])
 
 print('Starting Extracting '+ str(len(new_Book)) + ' Book Details...')
 
@@ -145,13 +152,13 @@ else:
 
 
 if len(new_Book) % num_books == 0:
-    end_point = int(len(new_Book) % num_books)
+    end_point = int(len(new_Book) / num_books)
 else:
-    end_point = int(len(new_Book) % num_books) + 1
+    end_point = int(len(new_Book) / num_books) + 1
 
 for i in range(new_Book['start_point'][0], end_point):
     start_index = i * num_books
-    if len(new_Book)< (i+1)*num_books:
+    if len(new_Book) < (i+1)*num_books:
         end_index = len(new_Book)
     else:
         end_index = (i+1)*num_books
@@ -164,7 +171,7 @@ for i in range(new_Book['start_point'][0], end_point):
 # drop count column
 new_Book = new_Book.drop(['start_point'], axis = 1)
 # drop duplicates
-new_Book = new_Book.drop_duplicates(subset = ['Title'])
+# new_Book = new_Book.drop_duplicates(subset = ['Title'])
+
 
 new_Book.to_csv(file_name + '.txt')
-new_Book.to_csv(file_name + '.csv')
