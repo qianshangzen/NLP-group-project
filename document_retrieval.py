@@ -16,7 +16,9 @@ cross_encoder=CrossEncoder('cross-encoder/ms-marco-TinyBERT-L-6')
 
 
 # load database
-database=pd.read_csv('Book_5600.csv')
+#database=pd.read_csv('Book_5600.csv')
+database=pd.read_csv('book1.txt',sep=',',header=None)
+database.columns=['Subject', 'Title', 'Author', 'Url', 'Cover_url','Price','ISBN-10','ISBN-13','PubDate','Publisher','Overview']
 overview=[x for x in database['Overview'] if not pd.isnull(x)]
 title=[database['Title'][i] for i in range(len(database['Title'])) if not pd.isnull(database['Overview'][i])]
 subject=[database['Subject'][i] for i in range(len(database['Subject'])) if not pd.isnull(database['Overview'][i])]
