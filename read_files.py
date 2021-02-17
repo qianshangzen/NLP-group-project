@@ -2,6 +2,7 @@
 import os
 import pandas as pd
 import itertools as it
+import re
 
 def customized_pd_read(file_path, hdr):
     print("Reading file " + file_path)
