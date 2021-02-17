@@ -5,9 +5,6 @@ import pandas as pd
 from time import sleep
 import re
 
-book_urls = pd.read_csv('../NLP-group-project/Subject_Url.csv')
-book_urls = book_urls[40:80]
-
 def web_scrapper_book(urls, num_book_per_page=40, max_num_pages=5):
     # HEADERS = ({'User-Agent':
     #                 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36',
@@ -126,11 +123,16 @@ def ExtractBook(book_urls, num_book_per_page = 40, max_num_pages = 10):
     final_books = web_scrapper_overview(books)
     return final_books
 
-file_name = 'Book_41_80_subjects'
+
+book_urls = pd.read_csv('../NLP-group-project/Subject_Url.csv')
+book_urls = book_urls[120:160]
+
+file_name = 'Book_121_160_subjects'
 
 # Book_data = web_scrapper_book(book_urls, num_book_per_page = 40, max_num_pages = 30)
-#
 
+
+# new_Book = new_Book.drop_duplicates(subset = ['Title'])
 # Book_data.to_csv(file_name + '.txt', sep = ',', index = False)
 # print('Done Extracting '+ str(len(Book_data)) + ' Book Info...')
 #
@@ -139,7 +141,6 @@ file_name = 'Book_41_80_subjects'
 new_Book = pd.read_csv(file_name + '.txt')
 
 # drop duplicates
-new_Book = new_Book.drop_duplicates(subset = ['Title'])
 
 print('Starting Extracting '+ str(len(new_Book)) + ' Book Details...')
 
