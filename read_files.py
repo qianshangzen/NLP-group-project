@@ -16,5 +16,5 @@ print(f'Finished reading {len(data)} books')
 data.columns = ['Subject','Title','Author','Url','Cover_url','Price','ISBN-10','ISBN-13','PubDate','Publisher','Overview']
 data = data.drop_duplicates(['Title'])
 data = data.reset_index().drop(['index'], axis = 1)
-data.to_csv('final_data.txt')
+data.to_csv('final_data.txt', index = False)
 print(f'After cleaning, total {len(data)} of books is saved to "final_data.txt"')
